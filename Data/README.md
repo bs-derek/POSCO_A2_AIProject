@@ -1,7 +1,7 @@
 #### 용량이 크기 때문에 fer2013.csv 데이터는 Kaggle에서 직접 다운받아 주시길 바랍니다.
 
 해당 데이터는 FER2013(Facial Emotion Recognition 2013)의 데이터셋을 크라우드소싱을 통해 10명의 Tagger들이 투표를 진행하여 가장 많이 선택된 감정을 기반으로 만든 데이터셋입니다.
-기존 FER2013 데이터에서 라벨링이 잘못된 데이터들로 인한 낮은 Accuracy 예방할 수 있습니다.
+기존 FER2013 데이터에서 라벨링이 잘못된 데이터들로 인한 낮은 Accuracy 예방할 수 있습니다. 표정 인식 환경을 고려하여 Data Augmentation은 20% 밝게, 20% 어둡게를 적용했습니다. 
 
 같은 표를 받은 emotion에 대한 우선순위는 아래와 같습니다.  
 neutral > happiness > surprise > sadness > anger > disgust > fear > comtempt > unknown> NF
