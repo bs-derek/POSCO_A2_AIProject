@@ -90,8 +90,8 @@ try:
             faceLandmark = predictor(gray, rect)
 
         if(len(rects) != 0) :
-            horizontal_gaze_ratio_left_eye, vertical_gaze_ratio_left_eye =  econ.getGazeRatio(image,gray, faceLandmark,np.arange(lStart,lEnd+1))
-            horizontal_gaze_ratio_right_eye, vertical_gaze_ratio_right_eye =  econ.getGazeRatio(image,gray, faceLandmark,np.arange(rStart,rEnd+1))
+            horizontal_gaze_ratio_left_eye, vertical_gaze_ratio_left_eye =  econ.getGazeRatio(gray, faceLandmark,np.arange(lStart,lEnd+1))
+            horizontal_gaze_ratio_right_eye, vertical_gaze_ratio_right_eye =  econ.getGazeRatio(gray, faceLandmark,np.arange(rStart,rEnd+1))
             horizontal_gaze_ratio = (horizontal_gaze_ratio_right_eye + horizontal_gaze_ratio_left_eye) / 2
             vertical_gaze_ratio = (vertical_gaze_ratio_right_eye + vertical_gaze_ratio_left_eye) / 2
 
@@ -175,7 +175,7 @@ try:
         print(cord)
         client_socket.sendall(bytes(cord,'utf8'))
 
-        for (x,y,w,h) in faces:
+        for (x,y,w,h) in facePoints:
             cv2.rectangle(image,(x,y),(x+w,y+h),(255,0,0),2)
 
         cv2.imshow('Android Screen', image)

@@ -133,7 +133,7 @@ def getExpression(faceFrame,gray,FERmodel) :
     return 0,(0,0)
 
 
-def getGazeRatio(image,gray,faceLandmark,eye_points):
+def getGazeRatio(gray,faceLandmark,eye_points):
     eye_region = np.array([(faceLandmark.part(eye_points[0]).x, faceLandmark.part(eye_points[0]).y),
                                 (faceLandmark.part(eye_points[1]).x, faceLandmark.part(eye_points[1]).y),
                                 (faceLandmark.part(eye_points[2]).x, faceLandmark.part(eye_points[2]).y),
@@ -141,10 +141,10 @@ def getGazeRatio(image,gray,faceLandmark,eye_points):
                                 (faceLandmark.part(eye_points[4]).x, faceLandmark.part(eye_points[4]).y),
                                 (faceLandmark.part(eye_points[5]).x, faceLandmark.part(eye_points[5]).y)], np.int32)
 
-    height, width, _ = image.shape
+    height, width = gray.shape
     mask = np.zeros((height, width), np.uint8)
-    cv2.polylines(image, [eye_region], True, 255, 2)
-    cv2.fillPoly(mask, [eye_region], 255)
+    # cv2.polylines(image, [eye_region], True, 255, 2)
+    # cv2.fillPoly(mask, [eye_region], 255)
     eye = cv2.bitwise_and(gray, gray, mask=mask)
 
 
