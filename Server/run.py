@@ -13,6 +13,7 @@ IMG_WIDTH , IMG_HEIGHT= 480, 640
 ANRD_WIDTH,ANRD_HEIGHT = 1170,1780
 
 
+
 device = torch.device('cpu')
 
 emotion_dict = {0: "neutral", 1: "happiness", 2: "surprise", 3: "sadness", 4: "anger",
@@ -60,6 +61,8 @@ FER_model= FERModel()
 FER_model.eval()
 
 
+prev_x, prev_y = IMG_WIDTH/2, IMG_HEIGHT/2
+momentum = 0.8
 
 print(IP,':',PORT)
 
@@ -84,12 +87,6 @@ try:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         # image = image[50:IMG_HEIGHT-50][50:IMG_WIDTH-50]
-
-        print('Transform IMG',end='\t| ')
-
-        # frame = imutils.resize(image, width=450)
-
-
 
 
 
@@ -185,19 +182,19 @@ try:
         print('Sent to Client',end='\t')
 
 
-        # print(gazeRatioLR,gazeRatioTB,'\n',faceDirectionX,faceDirectionY)
-        # x, y  = econ.getXY(cur_point, facePoint,count,diff_TH,freeze_TH)
-        # x, y  = econ.strechingPoint(x,y,IMG_WIDTH,IMG_HEIGHT,ANRD_WIDTH,ANRD_HEIGHT)
-
         x,y = gazePoint
         x,y =  int(ANRD_WIDTH/2), int(ANRD_HEIGHT/2)
         device_width = ANRD_WIDTH / 4
         device_height = ANRD_HEIGHT / 4
+
         d1_x,d1_y = econ.rateToDistance(gazeRatioLR,gazeRatioTB,device_width,device_height,weight=5)
         d2_x, d2_y = econ.rateToDistance(faceDirectionX, faceDirectionY, device_width, device_height,weight=5)
+
         x += d1_x +d2_x
         y += d2_x +d2_y
         # gazeRatioLR
+        x =int(x*momentum  + prev_x * (1-momentum))
+        y =int(y*momentum  + prev_y * (1-momentum))
         cord = str(x) + '/' + str(y) + '/' +str(blink) + '/' + str(scroll) + '/' + str(FERNum)
         print(cord)
         client_socket.sendall(bytes(cord,'utf8'))
@@ -206,6 +203,8 @@ try:
 
         cv2.imshow('Android Screen', image)
         count += 1
+        prev_x = x
+        prev_y = y
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
