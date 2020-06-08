@@ -13,12 +13,8 @@ from eyeconModel import transformImg
 IMG_WIDTH , IMG_HEIGHT= 480, 640
 ANRD_WIDTH,ANRD_HEIGHT = 1170,1780
 
-
-
-device = torch.device('cpu')
-
 emotion_dict = {0: "neutral", 1: "happiness", 2: "surprise", 3: "sadness", 4: "anger",
-5: "disgust", 6: "fear", 7: "comtempt", 8: "unknown", 9: "Not a Face"}
+                5: "disgust", 6: "fear", 7: "comtempt", 8: "unknown", 9: "Not a Face"}
 
 
 parser = argparse.ArgumentParser()
@@ -35,8 +31,10 @@ BLINK_TH = args.blink_th
 
 
 
-faceClassifier = econ.loadClassifier(util_path)
 
+device = torch.device('cpu')
+
+faceClassifier = econ.loadClassifier(util_path)
 predictor = dlib.shape_predictor(util_path + 'shape_predictor_68_face_landmarks.dat')
 detector = dlib.get_frontal_face_detector()
 
@@ -46,17 +44,12 @@ detector = dlib.get_frontal_face_detector()
 
 state_direction_num = 5
 state_Q_num = 3
-
 state_memory = econ.loadStateDict(state_direction_num,state_Q_num)
 
-Gaze_model = GazeModel()
+Gaze_model, FER_model = GazeModel(),FERModel()
 Gaze_model.eval()
 
-FER_model= FERModel()
-FER_model.eval()
-
-
-prev_x, prev_y = IMG_WIDTH/2, IMG_HEIGHT/2
+prev_x, prev_y = ANRD_WIDTH/2, ANRD_HEIGHT/2
 momentum = 0.7
 
 print(IP,':',PORT)
@@ -65,7 +58,6 @@ server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((IP, PORT))
 server_socket.listen()
 print('listening...')
-
 
 try:
     client_socket, addr = server_socket.accept()
@@ -81,12 +73,8 @@ try:
         image = cv2.imdecode(np.frombuffer(frame_bytes, np.uint8), cv2.IMREAD_COLOR)
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        # image = image[50:IMG_HEIGHT-50][50:IMG_WIDTH-50]
-
-
 
         print('\tGaze tracking : [Classification]', end='\t ')
-
 
         inputData = Image.fromarray(image)
         inputData = transformImg(inputData)
@@ -119,6 +107,7 @@ try:
         gazeRatioLR = state_memory['GazeRatioLR'][(count) % state_direction_num] - state_memory['GazeRatioLR'].mean()
         gazeRatioTB = state_memory['GazeRatioTB'][(count) % state_direction_num] - state_memory['GazeRatioTB'].mean()
 
+
         print('[Face Point]')
 
         facePoints = econ.classifyFace(image, faceClassifier)
@@ -131,7 +120,6 @@ try:
             state_memory['FacePointX'][count % state_direction_num] = state_memory['FacePointX'][(count-1) % state_direction_num]
             state_memory['FacePointY'][count % state_direction_num] = state_memory['FacePointY'][(count-1) % state_direction_num]
 
-        
         faceDirectionX = (state_memory['FacePointX'][count%state_direction_num] - state_memory['FacePointX'].mean())/IMG_WIDTH
         faceDirectionY = (state_memory['FacePointY'][count%state_direction_num] - state_memory['FacePointY'].mean())/IMG_HEIGHT
 
@@ -155,12 +143,12 @@ try:
             state_memory['Scroll'][count % state_Q_num] =0
 
 
-        print('\tEstimate expression')
-
+        print('Estimate expression')
 
         state_memory['FER'][count%state_Q_num], tagPosition = econ.getExpression(facePoints,image,FER_model)
 
 
+        print('Integrate')
 
         blink = econ.modeList(state_memory['Click'])
         scroll = econ.modeList(state_memory['Scroll'])
@@ -171,9 +159,6 @@ try:
             FERNum = econ.modeList(state_memory['FER'])
             cv2.putText(image,emotion_dict[FERNum],tagPosition, cv2.FONT_HERSHEY_SIMPLEX, 0.8,(0, 255, 0), 1, cv2.LINE_AA)
 
-
-        print('\tSent to Client',end='\t')
-
         d1_x, d1_y = econ.rateToDistance(gazeRatioLR,gazeRatioTB,ANRD_WIDTH,ANRD_HEIGHT,weight=0.5)
         d2_x, d2_y = econ.rateToDistance(faceDirectionX, faceDirectionY, ANRD_WIDTH,ANRD_HEIGHT,weight=0.5)
 
@@ -183,9 +168,15 @@ try:
         x, y =int(x*momentum + prev_x * (1-momentum)) , int(y*momentum + prev_y * (1-momentum))
         prev_x, prev_y = x, y
 
+
+        print('\tSent to Client',end='\t')
+
         cord = str(x) + '/' + str(y) + '/' +str(blink) + '/' + str(scroll) + '/' + str(FERNum)
         print(cord)
         client_socket.sendall(bytes(cord,'utf8'))
+
+        for (x,y,w,h) in faces:
+            cv2.rectangle(image,(x,y),(x+w,y+h),(255,0,0),2)
 
         cv2.imshow('Android Screen', image)
         count += 1
