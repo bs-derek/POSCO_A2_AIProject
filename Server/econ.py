@@ -12,11 +12,7 @@ import torch
 import math
 
 
-transformImg = transforms.Compose([
-        transforms.Resize((224,224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
-        ])
+
 
 
 def recvAll(sock, count):
@@ -34,11 +30,9 @@ def modeList(L):
     return max(set(L), key=L.count)
 
 
-def loadStateDict(d_class,d_class_count,state_direction_num,state_Q_num):
+def loadStateDict(state_direction_num,state_Q_num):
 
     state_memory = dict()
-
-    state_memory['District'] = [int(d_class / 2) for i in range(d_class_count)]
 
     state_memory['GazeRatioLR'] = np.array([1.0 for i in range(state_direction_num)])
     state_memory['GazeRatioTB'] = np.array([1.0 for i in range(state_direction_num)])
@@ -107,21 +101,18 @@ def getFaceXY(faceImage) :
     y = face[1] + face[3]/2
     return x,y
 
-
-def getDistrictList(W,H,num=4) :
-    districtList = [ 0 for i in range(num*num)]
-    d_count = 0
-    for i in range (0,num) :
-        for j in range(0, num) :
-            width = (W/(num*2)) * (2*j +1)
-            height = (H/(num*2)) * (2*i +1)
-            districtList[d_count] = (int(width),int(height))
-            d_count += 1
-    return np.array(districtList)
-
-def getGazeDistrictIdx(model,image):
+def getGazePoint(model,image,W,H):
     result = model(image[None, ...])[0]
-    return torch.argmax(result)
+    x_rate = 0
+    y_rate = 0
+    for i in [0,1,4,5,8,9,12,13] :
+        x_rate += result[i]
+    for i in [0,1,2,3,4,5,6,7] :
+        y_rate += result[i]
+    x = x_rate * W
+    y = y_rate * H
+    return x,y
+
 
 
 def getExpression(faceFrame,gray,FERmodel) :
